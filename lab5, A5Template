@@ -102,7 +102,7 @@ void loop() {
     deltaT = false;
     portEXIT_CRITICAL(&timerMux1);
 
-    omegaSpeed = abs(count);
+    omegaSpeed = count;
     potReading = analogRead(POT);
     omegaDes = map(potReading, 0, 4095, -omegaMax, omegaMax);  // PLEASE SPECIFY OMEGAMAX VALUE ABOVE
     // err = omegaDes - omegaSpeed;
