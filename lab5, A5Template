@@ -7,6 +7,7 @@
 ESP32Encoder encoder;
 
 int omegaSpeed = 18;
+int err = 0;
 int omegaDes = 0;
 int omegaMax = 18;  // CHANGE THIS VALUE TO YOUR MEASURED MAXIMUM SPEED
 int D = 0;
@@ -110,11 +111,15 @@ void loop() {
     //CHANGE THIS SECTION FOR BANG-BANG CONTROL
   
     D = map(potReading, 0, 4095, -NOM_PWM_VOLTAGE, NOM_PWM_VOLTAGE);
-    if (omegaSpeed > omegaDes){
-      D=0;
-    } else if (omegaSpeed<=omegaDes){
+    err = omegaDes - omegaSpeed;
+    if (err <0 & omegaDes < 0){
+      D=-150;
+    } else if (err >0 & omegaDes > 0){
       D=150;
-    }
+    }  else{
+      D=0;
+      }
+    
 
     //END A5 CONTROL SECTION
 
