@@ -1,0 +1,42 @@
+#include <Arduino.h>
+
+// Define constants ------------------------------------
+#define BTN 27  // Declare the button pin number
+
+// Setup variables ------------------------------------
+volatile bool buttonIsPressed = false;
+
+// Initialization ------------------------------------
+void IRAM_ATTR isr() {  // Function to be called when interrupt is triggered
+  buttonIsPressed = true;
+}
+
+void setup() {
+  // Put your setup code here, to run once:
+  Serial.begin(115200);
+  pinMode(BTN, INPUT);                // Configure the specified pin to behave as an input
+  attachInterrupt(BTN, isr, RISING);  // Set the "BTN" pin as the interrupt pin
+                                      // Call function named "isr" when the interrupt is triggered
+                                      // "RISING" means triggering interrupt when the pin goes from LOW to HIGH
+}
+
+// Main loop ------------------------------------
+void loop() {
+  // Call custom event checker function
+  if (CheckForButtonPress()) {
+    ButtonResponse();  // Call service function if button is pressed
+  }
+  Serial.println("Serial Print");
+  delay(100);
+}
+
+// Custom event checker function ------------------------------------
+bool CheckForButtonPress() {
+  return buttonIsPressed;
+}
+
+// Custom service function ------------------------------------
+void ButtonResponse() {
+  buttonIsPressed = false;
+  Serial.println("Pressed!");
+}
