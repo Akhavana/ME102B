@@ -1,0 +1,60 @@
+#include <Arduino.h>
+
+// Define constants ------------------------------------
+#define BTN 27           // Button pin number
+#define DEBOUNCE_TIME 50 // Debounce time in milliseconds
+
+// Setup variables ------------------------------------
+volatile bool buttonIsPressed = false;
+volatile bool debounceExpired = true; // Tracks if debounce time has expired
+hw_timer_t *debounceTimer = NULL;
+
+// ISR for Button Press ------------------------------------
+void IRAM_ATTR isr() {
+  if (debounceExpired) {
+    buttonIsPressed = true;
+    debounceExpired = false;  // Reset debounce flag
+    timerRestart(debounceTimer); // Restart debounce timer
+  }
+}
+
+// Timer callback function ------------------------------------
+void IRAM_ATTR onTimer() {
+  debounceExpired = true; // Allow button press to register again
+}
+
+void setup() {
+  // Initialize serial and button
+  Serial.begin(115200);
+  pinMode(BTN, INPUT);
+
+  // Attach interrupt to the button pin
+  attachInterrupt(BTN, isr, RISING);
+
+  // Setup debounce timer
+  debounceTimer = timerBegin(0, 80, true);        // Timer 0, prescaler 80 (1 us tick)
+  timerAttachInterrupt(debounceTimer, &onTimer, true);
+  timerAlarmWrite(debounceTimer, DEBOUNCE_TIME * 1000, false); // Set for 50 ms (or 100 ms as needed)
+  timerAlarmEnable(debounceTimer); // Enable alarm, but it won't start until first press
+}
+
+// Main loop ------------------------------------
+void loop() {
+  // Check if button was pressed
+  if (CheckForButtonPress()) {
+    ButtonResponse();  // Call service function if button is pressed
+  }
+  Serial.println("Serial Print");
+  delay(100);
+}
+
+// Custom event checker function ------------------------------------
+bool CheckForButtonPress() {
+  return buttonIsPressed && debounceExpired; // Check button press and debounce timer
+}
+
+// Custom service function ------------------------------------
+void ButtonResponse() {
+  buttonIsPressed = false;
+  Serial.println("Pressed!");
+}
