@@ -6,8 +6,9 @@
 
 // Setup variables ------------------------------------
 volatile bool buttonIsPressed = false;
-volatile bool debounceExpired = true; // Tracks if debounce time has expired
+volatile bool debounceflag = false; // Tracks if debounce time has expired
 hw_timer_t *debounceTimer = NULL;
+portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 
 // ISR for Button Press ------------------------------------
 void IRAM_ATTR isr() {
@@ -20,7 +21,10 @@ void IRAM_ATTR isr() {
 
 // Timer callback function ------------------------------------
 void IRAM_ATTR onTimer() {
-  debounceExpired = true; // Allow button press to register again
+  portENTER_CRITICAL_ISR(&timerMux0);
+  DEBOUNCEflag=false;
+  portExit_CRITICAL_ISR(&timerMux0);
+  timerStop(timer0);
 }
 
 void setup() {
@@ -32,10 +36,10 @@ void setup() {
   attachInterrupt(BTN, isr, RISING);
 
   // Setup debounce timer
-  debounceTimer = timerBegin(0, 80, true);        // Timer 0, prescaler 80 (1 us tick)
-  timerAttachInterrupt(debounceTimer, &onTimer, true);
-  timerAlarmWrite(debounceTimer, DEBOUNCE_TIME * 1000, false); // Set for 50 ms (or 100 ms as needed)
-  timerAlarmEnable(debounceTimer); // Enable alarm, but it won't start until first press
+  timer0 = timerBegin(100000)       
+  timerAttachInterrupt(timer0, &onTimer0);
+  timerAlarm(timer0, 10000, True, 0); // Set for 50 ms (or 100 ms as needed)
+  attachInterrupt(BIN,irs,RISING); // Enable alarm, but it won't start until first press
 }
 
 // Main loop ------------------------------------
@@ -50,7 +54,15 @@ void loop() {
 
 // Custom event checker function ------------------------------------
 bool CheckForButtonPress() {
-  return buttonIsPressed && debounceExpired; // Check button press and debounce timer
+  if(buttonIsPressed ==true && DEBOUNCINGflag==false){
+    portENTER_CRITICAL_ISR(&timerMux0);
+    DEBOUNCINGflag = true;
+    portExit_CRITICAL_ISR(&timerMux0);
+    timerStart(timer0);
+    return true;
+  }
+
+  return false; 
 }
 
 // Custom service function ------------------------------------
