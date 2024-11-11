@@ -6,24 +6,24 @@
 
 // Setup variables ------------------------------------
 volatile bool buttonIsPressed = false;
-volatile bool debounceflag = false; // Tracks if debounce time has expired
-hw_timer_t *debounceTimer = NULL;
+volatile bool DEBOUNCINGflag = false; // Tracks if debounce time has expired
+hw_timer_t *timer0 = NULL;
 portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 
 // ISR for Button Press ------------------------------------
 void IRAM_ATTR isr() {
-  if (debounceExpired) {
+  if (!DEBOUNCINGflag) {
     buttonIsPressed = true;
-    debounceExpired = false;  // Reset debounce flag
-    timerRestart(debounceTimer); // Restart debounce timer
+    DEBOUNCINGflag = true;  // Reset debounce flag
+    timerRestart(timer0); // Restart debounce timer
   }
 }
 
 // Timer callback function ------------------------------------
 void IRAM_ATTR onTimer() {
   portENTER_CRITICAL_ISR(&timerMux0);
-  DEBOUNCEflag=false;
-  portExit_CRITICAL_ISR(&timerMux0);
+  DEBOUNCINGflag=false;
+  portEXIT_CRITICAL_ISR(&timerMux0);
   timerStop(timer0);
 }
 
@@ -33,11 +33,11 @@ void setup() {
   pinMode(BTN, INPUT);
 
   // Attach interrupt to the button pin
-  attachInterrupt(BTN, isr, RISING);
+  // attachInterrupt(BTN, isr, RISING);
 
   // Setup debounce timer
-  timer0 = timerBegin(100000)       
-  timerAttachInterrupt(timer0, &onTimer0);
+  timer0 = timerBegin(100000);      
+  timerAttachInterrupt(timer0, &onTime0);
   timerAlarm(timer0, 10000, True, 0); // Set for 50 ms (or 100 ms as needed)
   attachInterrupt(BIN,irs,RISING); // Enable alarm, but it won't start until first press
 }
