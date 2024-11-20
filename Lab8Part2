@@ -2,18 +2,18 @@
 
 // Pin Definitions
 #define BTN 27           // Button pin
-#define LED_PIN 13       // LED pin
 #define SPK 25           // Speaker pin
+#define LED_PIN 13       // LED pin
 #define POT_PIN 34       // Potentiometer pin (analog input)
 
 // Constants
-const int threshold = 500; // Threshold for the "distance sensor" (analog reading)
+const int threshold = 500; // Distance sensor threshold (analog reading)
 const int freq = 5000;     // Speaker frequency
 const int pwmChannel = 0;  // PWM channel
 const int resolution = 8;  // PWM resolution
 
 // Variables
-volatile bool buttonPressed = false; // Interrupt flag
+volatile bool buttonPressed = false; // Interrupt flag for button
 int state = 0;                       // 0: Unarmed, 1: Armed, 2: Alarming
 
 // Interrupt Service Routine
@@ -22,22 +22,23 @@ void IRAM_ATTR isr() {
 }
 
 // Function Prototypes
+bool CheckForButtonPress();
 void sound_on();
 void sound_off();
 void led_on();
 void led_off();
 
 void setup() {
-  // Pin setup
+  // Pin Setup
   pinMode(BTN, INPUT_PULLUP);
   pinMode(LED_PIN, OUTPUT);
-  attachInterrupt(BTN, isr, FALLING);
+  attachInterrupt(BTN, isr, FALLING); // Attach button interrupt
 
-  // PWM setup
+  // PWM Setup
   ledcSetup(pwmChannel, freq, resolution);
   ledcAttachPin(SPK, pwmChannel);
 
-  // Initial states
+  // Initial States
   led_off();
   sound_off();
 }
@@ -46,42 +47,48 @@ void loop() {
   // Read the analog value from the potentiometer
   int distance = analogRead(POT_PIN);
 
-  // State machine
+  // State Machine
   switch (state) {
     case 0: // Unarmed State
-      if (buttonPressed) {
-        buttonPressed = false;
+      if (CheckForButtonPress()) {
         led_on();
         state = 1; // Transition to Armed State
       }
       break;
 
     case 1: // Armed State
-      if (distance < threshold) {
-        sound_on();
-        state = 2; // Transition to Alarming State
-      } else if (buttonPressed) {
-        buttonPressed = false;
+      if (CheckForButtonPress()) {
         led_off();
         state = 0; // Transition to Unarmed State
+      } else if (distance < threshold) {
+        sound_on();
+        state = 2; // Transition to Alarming State
       }
       break;
 
     case 2: // Alarming State
-      if (distance >= threshold) {
+      if (CheckForButtonPress()) {
+        sound_off();
+        led_off();
+        state = 0; // Transition to Unarmed State
+      } else if (distance >= threshold) {
         sound_off();
         state = 1; // Transition to Armed State
-      } else if (buttonPressed) {
-        buttonPressed = false;
-        led_off();
-        sound_off();
-        state = 0; // Transition to Unarmed State
       }
       break;
   }
 }
 
-// Function Definitions
+// Event Checker for Button Press
+bool CheckForButtonPress() {
+  if (buttonPressed) {
+    buttonPressed = false;
+    return true;
+  }
+  return false;
+}
+
+// Service Functions
 void sound_on() {
   ledcWriteTone(pwmChannel, 1000); // Turn on sound
 }
